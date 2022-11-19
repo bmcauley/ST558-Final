@@ -25,5 +25,5 @@ Copy and run the following code to install and load the required packages. If yo
 Copy and run the following code in RStudio to open the app.
 
 ```
-<access code>
+shiny::runGitHub("bmcauley/ST558-Final", ref = "main", subdir = "STFP")
 ```
