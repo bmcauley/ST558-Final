@@ -17,9 +17,19 @@ The following R packages were used in developing this app. For it to perform as 
 
 ### Accessing the Application
 
-Copy and run the following code to install and load the required packages. If your system already has a package, it will just be loaded.
+Download the [installPackage.R](installPackage.R) script, or copy and run the code here to install any missing packages and load all of them.
+
 ```
-<package code>
+pkglst <- c("shiny", "tidyverse", "caret", "leaps", "gbm")
+
+OK <- pkglst %in% rownames(installed.packages())
+
+if (any(okPkg == FALSE)) {
+  install.packages(pkglst[!OK])
+}
+
+lapply(pkglst, require, character.only = TRUE)
+
 ```
 
 Copy and run the following code in RStudio to open the app.
