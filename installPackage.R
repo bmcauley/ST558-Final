@@ -11,4 +11,4 @@ if (any(okPkg == FALSE)) {
 }
 
 # Load the packages
-invisible(lapply(pkglst, require, character.only = TRUE))
+lapply(pkglst, require, character.only = TRUE)
