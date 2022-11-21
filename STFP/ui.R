@@ -32,7 +32,10 @@ shinyUI(fluidPage(
                         tabPanel("Model Info"),
                         tabPanel("Model Fitting"),
                         tabPanel("Prediction")),
-             tabPanel("Data"),
+            
+             tabPanel("Data", fluid = TRUE,
+                      tableOutput("table")),
+            
              id = "input$About")
   
   )
