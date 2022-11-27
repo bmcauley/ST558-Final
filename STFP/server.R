@@ -6,22 +6,20 @@ library(caret)
 library(tidyverse)
 library(DT)
 
-genshin <- read.csv("genshin.csv")
-
-gFLT <- genshin %>% 
-  select(-starts_with("voice"), -constellation, -special_dish) %>%
-  mutate(birthday = as.Date(birthday, '%m/%d')) %>%
+attrition <- read.csv("Attrition.csv") %>%
+  select(-X, -starts_with("Date_of_")) %>%
   mutate_if(is.character, as.factor)
+
 
 shinyServer(function(input, output) {
   
   #create output of observations    
   output$fullTable <- renderDataTable({
     
-    gTbl <- gFLT %>%
+    Tbl <- attrition %>%
       select(input$vars)
     
-    datatable(gTbl,
+    datatable(Tbl,
               options = list(
                 lengthMenu = list(c(10, 20, 50, -1), c('10', '20','50', 'All')),
                 pageLength = 10),
@@ -30,6 +28,16 @@ shinyServer(function(input, output) {
                 clear = FALSE))
    
    })
+  
+  # output$employData <- downloadHandler(
+  #   filname = function() {
+  #     paste("attrition_", format(Sys.time(), '%d-%m-%Y_%H:%M:%S'), ".csv", sep = "")
+  #   },
+  #   
+  #   content = function(file) {
+  #     write.csv(output$fullTable, file)
+  #   }
+  # )
     
     
   })
