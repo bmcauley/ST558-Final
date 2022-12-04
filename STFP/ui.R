@@ -4,6 +4,8 @@
 library(shiny)
 
 var_choice <- names(attrition)
+numVar <- names(select_if(attrition, is.numeric))
+factVar <- names(select_if(attrition, is.factor))
 
 shinyUI(fluidPage(
   
@@ -50,7 +52,7 @@ shinyUI(fluidPage(
                                p("The data consists of information gathered and sampled by IBM about their employee satisfaction, income, seniority, and other demographics.
                                 There are 1470 employees (observations) and--within the confines of this interface--30 attributes (variables). The response variable
                                 in the data is ", code("Attrition"), "--a binary variable with values `Yes` (an employee has left IBM) and `No` (an employee is still working at IBM).
-                                The version of the data used here is hosted on", a("kaggle", href = "https://www.kaggle.com/datasets/singhnproud77/hr-attrition-dataset"),
+                                The version of the data used here is hosted on", a("kaggle", href = "https://www.kaggle.com/datasets/patelprashant/employee-attrition"),
                                 "For more information about the background and purpose of the data, see ", a("IBM's Developer Blog", href = 'https://developer.ibm.com/patterns/data-science-life-cycle-in-action-to-solve-employee-attrition-problem/'),"."                      
                                 ),
                                
@@ -62,7 +64,142 @@ shinyUI(fluidPage(
                         )
                       ),
              
-            tabPanel("Data Exploration"),
+            tabPanel("Data Exploration",
+                     
+                     titlePanel("EDA"),
+                     
+                     sidebarLayout(
+                       
+                       sidebarPanel(
+                         
+                         HTML("<em><h6>
+                              Use the options below to generate custom graphical summaries of the data.
+                              The variables available per plot are constrained by <code>ggplot</code>
+                              aesthetic requirements:
+                              </h6></em>
+                              
+                            <ul>
+                              <li>Histogram - Single variable (continuous)
+                              <li>Bar - single variable (discrete/categorical)
+                              <li>Scatter - Two variables (both continous)
+                              <li>Boxplot - Two variables (one continous, one discrete)
+                            </ul>
+                              "),
+                         radioButtons("plotType",
+                                      "Plot Type:",
+                                      c(Histogram = "density",
+                                        Bar = "bar",
+                                        Scatter = "point",
+                                        Boxplot = "boxplot")
+                         ),
+                         
+                         conditionalPanel(
+                           condition = "input.plotType == 'density'",
+                           selectInput(
+                             "plotVar",
+                             "X Variable:",
+                             numVar
+                           ),
+                           
+                           radioButtons("fillOpt",
+                                         "Fill with another variable? (creates density plot)",
+                                         c("No", "Yes")),
+                           
+                           conditionalPanel(condition = "input.fillOpt == 'Yes'",
+                                            selectInput(
+                                              "fillVar",
+                                              "Fill By:",
+                                              factVar
+                                            ))
+                          
+                         ),
+                         
+                         conditionalPanel(
+                           condition = "input.plotType == 'bar'",
+                           selectInput(
+                             "barPlotVar",
+                             "X Variable:",
+                             factVar
+                           ),
+                           
+                           checkboxInput("barfillOpt",
+                                        "Include grouping variable"),
+                           
+                           conditionalPanel(condition = "input.barfillOpt == 1",
+                                            selectInput(
+                                              "barfillVar",
+                                              "Group By:",
+                                              factVar
+                                              )
+                                            ),
+                           checkboxInput("barfacetOpt",
+                                         "Include faceting variable"),
+                           
+                           conditionalPanel(condition = "input.barfacetOpt == 1",
+                                            selectInput("barfacetVar",
+                                                        "Facet By:",
+                                                        factVar))
+                         ),
+                         
+                         conditionalPanel(
+                           condition = "input.plotType == 'point'",
+                           selectizeInput(
+                             "scatterX",
+                             'X Variable:',
+                             choices = numVar,
+                             multiple = FALSE),
+                           
+                           selectizeInput(
+                             "scatterY",
+                             "Y Variable:",
+                             choices = numVar,
+                             multiple = FALSE
+                           )
+                           ),
+                         
+                         h6(em("Use the options below to generate custom numerical summaries of the data.")),
+                         
+                         radioButtons("tblType",
+                                      "Summary Type:",
+                                      c('Correlation Matrix' = "corr",
+                                        'Five-Number Summary' = "fivenum")),
+                         
+                         conditionalPanel(condition = "input.tblType == 'corr'",
+                                          selectizeInput("corrvars", "Variables:",
+                                                         choices = numVar,
+                                                         selected = numVar[1:5],
+                                                         multiple = TRUE)
+                                          ),
+                         
+                         conditionalPanel(condition ="input.tblType == 'fivenum'",
+                                          selectInput("sumVar",
+                                                      "Vars:",
+                                                      choices = numVar
+                                          ),
+                                          
+                                          radioButtons("tableGroup",
+                                                       "Summarize by grouping variable?",
+                                                       c("No", "Yes")),
+                                          
+                                          conditionalPanel(condition = "input.tableGroup == 'Yes'",
+                                                           selectInput(
+                                                             "tblGroupVar",
+                                                             "Group By:",
+                                                             factVar
+                                                           )
+                                          )
+                                          )
+
+                        
+                       ),
+                       
+                       mainPanel(
+                         plotOutput("ggplot"),
+                         dataTableOutput("summTable")
+                       )
+                     )
+                    
+                     ),
 
              tabPanel("Modeling",
                         tabsetPanel(
@@ -232,31 +369,47 @@ shinyUI(fluidPage(
                                   )
 
                                   ),
-                          tabPanel("Build"),
+                          tabPanel("Build",
+                                   sidebarLayout(
+                                     sidebarPanel(
+                                       selectizeInput("vars", "Columns:",
+                                                      choices = var_choice,
+                                                      selected = var_choice[c(1:10)],
+                                                      multiple = TRUE)
+                                     ),
+                                     
+                                     mainPanel()
+                                     
+                                   )
+                          )
+                                   ,
                           tabPanel("Predict")
                                    )
                           
                         ),
             
              tabPanel("Data",
+                      titlePanel("See the Data"),
+                      
                       sidebarLayout(
                         
                         sidebarPanel(
-                          HTML("<h4>See the Data</h4>
-                          
-                                  <p>
-                                    Use the <em>Columns</em> box below to select variables from the dataset
-                                    to appear in the table on the right.</p>
+                          HTML(" <em><h6>
+                                    Use the <b>Columns</b> box below to select variables from the dataset
+                                    to appear in the table on the right.</h6>
                                     
-                                    <p>
+                                    <h6>
                                     Use the Search bar and/or the top selection row to subset the data to any value (or values) of each variable.
-                                  </p>
+                                  </h6>
                                   
                                   
-                                  <p>  
+                                  <h6>  
                                     Click within the filter boxes to access dropdowns or sliders (depending on the data type)
                                     containing the variable names and options for values.
-                                  </p>  
+                                  </h6>  
+                                  
+                                  <h6>You can save the data in any configured state.</h6>
+                                  </em>
                                     
                                     <u>Actions</u>
                             
@@ -274,7 +427,6 @@ shinyUI(fluidPage(
                                                   selected = var_choice[c(1:10)],
                                          multiple = TRUE),
                           
-                          p("You can save the data in its current state."),
                           
                           downloadButton("employData", "Save")),
                         
