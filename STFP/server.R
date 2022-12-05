@@ -91,26 +91,41 @@ shinyServer(function(input, output) {
       cnt_tbl <- cor(corrTbl)
     }
     
-    else if (input$tblType == 'fivesum') {
+    else if (input$tblType == 'fivenum') {
     if (input$tableGroup == 'Yes') {
       cnt_tbl <- attrition %>%
         group_by(get(input$tblGroupVar)) %>%
-        summarize(n = n(),
-                  min = min(get(input$sumVar)),
-                  mean = round(mean(get(input$sumVar)), 2),
-                  max = max(get(input$sumVar)),
-                  stddev = round(sd(get(input$sumVar)), 2)
+        summarize(N = n(),
+                  Min = min(get(input$sumVar)),
+                  Q1 = quantile(get(input$sumVar), 0.25),
+                  Median = median(get(input$sumVar)),
+                  Q3 = quantile(get(input$sumVar), 0.75),
+                  Max = max(get(input$sumVar))
         )
                   
     } else if (input$tableGroup == 'No') {
       
       cnt_tbl <- attrition %>%
-        summarize(min = min(get(input$sumVar)),
-                  mean = round(mean(get(input$sumVar)), 2),
-                  max = max(get(input$sumVar)),
-                  stddev = round(sd(get(input$sumVar)), 2))
+        summarize(VarName = input$sumVar,
+                  Min = min(get(input$sumVar)),
+                  Q1 = quantile(get(input$sumVar), 0.25),
+                  Median = median(get(input$sumVar)),
+                  Q3 = quantile(get(input$sumVar), 0.75),
+                  Max = max(get(input$sumVar))
+        )
                   }
-      }
+    }
+    
+    else {
+      
+      cnt_tbl <- attrition %>%
+        summarize(VarName = input$sumVar,
+                  Mean = round(mean(get(input$sumVar)), 2),
+                  Stddev = round(sd(get(input$sumVar)), 2),
+                  Var = round(var(get(input$sumVar)), 2),
+                  IQR = IQR(get(input$sumVar))
+                  )
+    }
     
     datatable(cnt_tbl)
   })

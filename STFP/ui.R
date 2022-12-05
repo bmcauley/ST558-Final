@@ -74,7 +74,7 @@ shinyUI(fluidPage(
                          
                          HTML("<em><h6>
                               Use the options below to generate custom graphical summaries of the data.
-                              The variables available per plot are constrained by <code>ggplot</code>
+                              The variables available per plot type are constrained by <code>ggplot</code>
                               aesthetic requirements:
                               </h6></em>
                               
@@ -162,7 +162,8 @@ shinyUI(fluidPage(
                          radioButtons("tblType",
                                       "Summary Type:",
                                       c('Correlation Matrix' = "corr",
-                                        'Five-Number Summary' = "fivenum")),
+                                        'Five-Number Summary' = "fivenum",
+                                        'Center/Spread' = "spr")),
                          
                          conditionalPanel(condition = "input.tblType == 'corr'",
                                           selectizeInput("corrvars", "Variables:",
@@ -171,9 +172,9 @@ shinyUI(fluidPage(
                                                          multiple = TRUE)
                                           ),
                          
-                         conditionalPanel(condition ="input.tblType == 'fivenum'",
+                         conditionalPanel(condition ="input.tblType == 'fivenum' || input.tblType == 'spr'",
                                           selectInput("sumVar",
-                                                      "Vars:",
+                                                      "Variable:",
                                                       choices = numVar
                                           ),
                                           
