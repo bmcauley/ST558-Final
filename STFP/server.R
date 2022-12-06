@@ -6,6 +6,7 @@ library(caret)
 library(tidyverse)
 library(DT)
 
+#Data cleaning step
 attrition <- read_csv("HR Employee Attrition.csv") %>%
   select(-EmployeeCount, -EmployeeNumber, -Over18, -PerformanceRating, -RelationshipSatisfaction,
          -StandardHours) %>%
@@ -83,19 +84,25 @@ shinyServer(function(input, output) {
   
   output$summTable <- renderDataTable({
     
+    grplist <- syms(input$tblGroupVar)
+    varlist <- syms(input$sumVar)
+    
     if (input$tblType == 'corr') {
       
       corrTbl <- attrition %>%
         select(all_of(input$corrvars))
       
-      cnt_tbl <- cor(corrTbl)
+      cnt_tbl <- round(cor(corrTbl), 4)
     }
     
     else if (input$tblType == 'fivenum') {
     if (input$tableGroup == 'Yes') {
+      
       cnt_tbl <- attrition %>%
-        group_by(get(input$tblGroupVar)) %>%
-        summarize(N = n(),
+        select(input$sumVar, !!!grplist) %>%
+        group_by(!!!grplist) %>%
+        summarize(VarName = input$sumVar,
+                  N = n(),
                   Min = min(get(input$sumVar)),
                   Q1 = quantile(get(input$sumVar), 0.25),
                   Median = median(get(input$sumVar)),
@@ -106,56 +113,81 @@ shinyServer(function(input, output) {
     } else if (input$tableGroup == 'No') {
       
       cnt_tbl <- attrition %>%
-        summarize(VarName = input$sumVar,
-                  Min = min(get(input$sumVar)),
-                  Q1 = quantile(get(input$sumVar), 0.25),
-                  Median = median(get(input$sumVar)),
-                  Q3 = quantile(get(input$sumVar), 0.75),
-                  Max = max(get(input$sumVar))
+        select(!!!varlist) %>%
+        summarize_all(list(
+                  Min = min,
+                  Q1 = ~quantile(., 0.25),
+                  Median = median,
+                  Q3 = ~quantile(., 0.75),
+                  Max = max)
         )
                   }
     }
     
     else {
+      if (input$tableGroup == 'Yes') {
+        cnt_tbl <- attrition %>%
+          select(input$sumVar, !!!grplist) %>%
+          group_by(!!!grplist) %>%
+          summarize(VarName = input$sumVar,
+                    Mean = round(mean(get(input$sumVar)), 2),
+                    Stddev = round(sd(get(input$sumVar)), 2),
+                    Var = round(var(get(input$sumVar)), 2),
+                    IQR = IQR(get(input$sumVar))
+          )
+      }
       
-      cnt_tbl <- attrition %>%
+      else if (input$tableGroup == 'No') {
+        cnt_tbl <- attrition %>%
         summarize(VarName = input$sumVar,
                   Mean = round(mean(get(input$sumVar)), 2),
                   Stddev = round(sd(get(input$sumVar)), 2),
                   Var = round(var(get(input$sumVar)), 2),
                   IQR = IQR(get(input$sumVar))
-                  )
+        )
+      }
+    }
+    
+    if (input$tblType != 'corr' && input$tableGroup == 'Yes') {
+      cnt_tbl <- cnt_tbl %>% 
+        rename_with(.cols = 1, ~paste(input$tblGroupVar))
     }
     
     datatable(cnt_tbl)
   })
   
   #create output of observations    
-  output$fullTable <- renderDataTable({
-    
-    Tbl <- attrition %>%
-      select(input$vars)
-    
-    datatable(Tbl,
+  output$fullTable <- renderDataTable(
+
+    datatable(attrition,
               options = list(
                 lengthMenu = list(c(10, 20, 50, -1), c('10', '20','50', 'All')),
                 pageLength = 10),
               filter = list(
                 position = "top",
-                clear = FALSE))
-   
-   })
+                clear = FALSE)
+              
+    )
+    
+  )
+  
+ # Tbl <- reactive(attrition %>% select(all_of(input$tblVars)))
+  
+  
   
   # output$employData <- downloadHandler(
   #   filname = function() {
-  #     paste("attrition_", format(Sys.time(), '%d-%m-%Y_%H:%M:%S'), ".csv", sep = "")
+  #     
+  #     #paste("attrition_", format(Sys.time(), '%d-%m-%Y_%H:%M:%S'), ".csv", sep = "")
   #   },
-  #   
+  # 
   #   content = function(file) {
-  #     write.csv(output$fullTable, file)
-  #   }
+  #     write.csv(attrition[input[["dt_rows_all"]]], file)
+  #   },
+  # 
+  #   contentType = "text/csv"
   # )
-    
+
     
   })
 

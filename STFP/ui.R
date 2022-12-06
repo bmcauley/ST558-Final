@@ -173,20 +173,26 @@ shinyUI(fluidPage(
                                           ),
                          
                          conditionalPanel(condition ="input.tblType == 'fivenum' || input.tblType == 'spr'",
-                                          selectInput("sumVar",
+                                          selectizeInput("sumVar",
                                                       "Variable:",
-                                                      choices = numVar
+                                                      choices = numVar,
+                                                      multiple = TRUE,
+                                                      selected = numVar[1:2],
+                                                      options = list(maxItems = 10)
                                           ),
                                           
                                           radioButtons("tableGroup",
-                                                       "Summarize by grouping variable?",
+                                                       "Summarize by grouping variable(s)? (Max. 2)",
                                                        c("No", "Yes")),
                                           
                                           conditionalPanel(condition = "input.tableGroup == 'Yes'",
-                                                           selectInput(
+                                                           selectizeInput(
                                                              "tblGroupVar",
                                                              "Group By:",
-                                                             factVar
+                                                             choices = factVar,
+                                                             multiple = TRUE,
+                                                             selected = factVar[1:2],
+                                                             options = list(maxItems = 2)
                                                            )
                                           )
                                           )
@@ -423,7 +429,7 @@ shinyUI(fluidPage(
                                   </ul>
                                "),
                           
-                          selectizeInput("vars", "Columns:",
+                          selectizeInput("tblVars", "Columns:",
                                                    choices = var_choice,
                                                   selected = var_choice[c(1:10)],
                                          multiple = TRUE),
