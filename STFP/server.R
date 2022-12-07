@@ -77,6 +77,7 @@ shinyServer(function(input, output) {
     else if (input$plotType == 'point') {
       ggplot(attrition, aes(x = get(input$scatterX), y = get(input$scatterY))) +
         geom_point() +
+        geom_smooth(method = "lm") +
         labs(x = input$scatterX, y = input$scatterY)
     }
     
@@ -99,16 +100,22 @@ shinyServer(function(input, output) {
     if (input$tableGroup == 'Yes') {
       
       cnt_tbl <- attrition %>%
-        select(input$sumVar, !!!grplist) %>%
+        select(!!!varlist, !!!grplist) %>%
         group_by(!!!grplist) %>%
-        summarize(VarName = input$sumVar,
-                  N = n(),
-                  Min = min(get(input$sumVar)),
-                  Q1 = quantile(get(input$sumVar), 0.25),
-                  Median = median(get(input$sumVar)),
-                  Q3 = quantile(get(input$sumVar), 0.75),
-                  Max = max(get(input$sumVar))
+        dplyr::summarize_all(
+          list(Min = min,
+            Q1 = ~quantile(., 0.25),
+            Median = median,
+            Q3 = ~quantile(., 0.75),
+            Max = max)
         )
+      
+      if(length(varlist) > 1) {
+        cnt_tbl <- cnt_tbl %>%
+          pivot_longer(cols = ends_with(c("_Min", "_Q1", "_Median", "_Q3", "_Max")),
+                     names_sep = "_",
+                     names_to = c("SummVar", ".value"))
+      }
                   
     } else if (input$tableGroup == 'No') {
       
@@ -121,36 +128,62 @@ shinyServer(function(input, output) {
                   Q3 = ~quantile(., 0.75),
                   Max = max)
         )
+      
+      if (length(varlist) > 1) {
+        cnt_tbl <- cnt_tbl %>%
+          pivot_longer(cols = everything(),
+                     names_sep = "_",
+                     names_to = c("SummVar", ".value"))
+      }
+        
+        
                   }
     }
     
     else {
       if (input$tableGroup == 'Yes') {
         cnt_tbl <- attrition %>%
-          select(input$sumVar, !!!grplist) %>%
+          select(!!!varlist, !!!grplist) %>%
           group_by(!!!grplist) %>%
-          summarize(VarName = input$sumVar,
-                    Mean = round(mean(get(input$sumVar)), 2),
-                    Stddev = round(sd(get(input$sumVar)), 2),
-                    Var = round(var(get(input$sumVar)), 2),
-                    IQR = IQR(get(input$sumVar))
-          )
+          summarize_all(list(
+              Mean = mean,
+              Stddev = sd,
+              Var = var,
+              IQR = IQR)
+              )
+        
+        if (length(varlist) > 1) {
+          cnt_tbl <- cnt_tbl %>%
+            pivot_longer(cols = ends_with(c("_Mean", "_Stddev", "_Var", "_IQR")),
+                       names_sep = "_",
+                       names_to = c("SummVar", ".value"))
+        }
+          
       }
       
       else if (input$tableGroup == 'No') {
         cnt_tbl <- attrition %>%
-        summarize(VarName = input$sumVar,
-                  Mean = round(mean(get(input$sumVar)), 2),
-                  Stddev = round(sd(get(input$sumVar)), 2),
-                  Var = round(var(get(input$sumVar)), 2),
-                  IQR = IQR(get(input$sumVar))
+          select(!!!varlist) %>%
+        summarize_all(list(
+          Mean = mean,
+          Stddev = sd,
+          Var = var,
+          IQR = IQR)
         )
+        
+        if(length(varlist) > 1) {
+          cnt_tbl <- cnt_tbl %>%
+            pivot_longer(cols = everything(),
+                       names_sep = "_",
+                       names_to = c("SummVar", ".value"))
+        }
+          
       }
     }
     
     if (input$tblType != 'corr' && input$tableGroup == 'Yes') {
       cnt_tbl <- cnt_tbl %>% 
-        rename_with(.cols = 1, ~paste(input$tblGroupVar))
+        rename_with(.cols = 1, ~paste0(input$tblGroupVar))
     }
     
     datatable(cnt_tbl)

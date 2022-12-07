@@ -166,19 +166,19 @@ shinyUI(fluidPage(
                                         'Center/Spread' = "spr")),
                          
                          conditionalPanel(condition = "input.tblType == 'corr'",
-                                          selectizeInput("corrvars", "Variables:",
+                                          selectizeInput("corrvars", "Variables (Max. 6):",
                                                          choices = numVar,
                                                          selected = numVar[1:5],
-                                                         multiple = TRUE)
+                                                         multiple = TRUE,
+                                                         options = list(maxItems = 6))
                                           ),
                          
                          conditionalPanel(condition ="input.tblType == 'fivenum' || input.tblType == 'spr'",
                                           selectizeInput("sumVar",
-                                                      "Variable:",
+                                                      "Variable(s)",
                                                       choices = numVar,
                                                       multiple = TRUE,
-                                                      selected = numVar[1:2],
-                                                      options = list(maxItems = 10)
+                                                      selected = numVar[1:5]
                                           ),
                                           
                                           radioButtons("tableGroup",
