@@ -129,6 +129,29 @@ shinyUI(fluidPage(
                                        numVar)
                          ),
                          
+                         conditionalPanel(
+                           condition = "['density','bar','point','box'].includes(input.plotType)",
+                           checkboxGroupInput("plotOpt",
+                                              "Plot Options:",
+                                              c('Group Fill' = 'fill',
+                                                'Facet Plot' = 'facet')),
+                           
+                           conditionalPanel(
+                             condition = "input.plotOpt.includes('fill')",
+                             selectInput("groupVar",
+                                         "Group By:",
+                                         factVar)
+                             ),
+                           
+                           conditionalPanel(
+                             condition = "input.plotOpt.includes('facet')",
+                             selectInput("facetVar:",
+                                         "Facet By:",
+                                         factVar)
+                             )
+                           
+                         ),
+                         
                          h6(em("Use the options below to generate custom numerical summaries of the data.")),
                          
                          radioButtons("tblType",
