@@ -90,72 +90,44 @@ shinyUI(fluidPage(
                                       c(Histogram = "density",
                                         Bar = "bar",
                                         Scatter = "point",
-                                        Boxplot = "boxplot")
+                                        Boxplot = "box")
                          ),
                          
                          conditionalPanel(
                            condition = "input.plotType == 'density'",
                            selectInput(
-                             "plotVar",
+                             "densityX",
                              "X Variable:",
-                             numVar
+                             numVar)
                            ),
-                           
-                           radioButtons("fillOpt",
-                                         "Fill with another variable? (creates density plot)",
-                                         c("No", "Yes")),
-                           
-                           conditionalPanel(condition = "input.fillOpt == 'Yes'",
-                                            selectInput(
-                                              "fillVar",
-                                              "Fill By:",
-                                              factVar
-                                            ))
-                          
-                         ),
                          
                          conditionalPanel(
                            condition = "input.plotType == 'bar'",
                            selectInput(
-                             "barPlotVar",
+                             "barX",
                              "X Variable:",
-                             factVar
-                           ),
-                           
-                           checkboxInput("barfillOpt",
-                                        "Include grouping variable"),
-                           
-                           conditionalPanel(condition = "input.barfillOpt == 1",
-                                            selectInput(
-                                              "barfillVar",
-                                              "Group By:",
-                                              factVar
-                                              )
-                                            ),
-                           checkboxInput("barfacetOpt",
-                                         "Include faceting variable"),
-                           
-                           conditionalPanel(condition = "input.barfacetOpt == 1",
-                                            selectInput("barfacetVar",
-                                                        "Facet By:",
-                                                        factVar))
+                             factVar)
                          ),
                          
                          conditionalPanel(
                            condition = "input.plotType == 'point'",
-                           selectizeInput(
-                             "scatterX",
-                             'X Variable:',
-                             choices = numVar,
-                             multiple = FALSE),
-                           
-                           selectizeInput(
-                             "scatterY",
-                             "Y Variable:",
-                             choices = numVar,
-                             multiple = FALSE
-                           )
-                           ),
+                           selectInput("pointX",
+                                       "X Variable:",
+                                       numVar),
+                           selectInput("pointY",
+                                       "Y Variable:",
+                                       numVar)
+                         ),
+                         
+                         conditionalPanel(
+                           condition = "input.plotType == 'box'",
+                           selectInput("boxX",
+                                       "X Variable:",
+                                       factVar),
+                           selectInput("boxY",
+                                       "Y Variable:",
+                                       numVar)
+                         ),
                          
                          h6(em("Use the options below to generate custom numerical summaries of the data.")),
                          
