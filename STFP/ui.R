@@ -113,24 +113,26 @@ shinyUI(fluidPage(
                            condition = "input.plotType == 'point'",
                            selectInput("pointX",
                                        "X Variable:",
-                                       numVar),
+                                       numVar,
+                                       numVar[1]),
                            selectInput("pointY",
                                        "Y Variable:",
-                                       numVar)
+                                       numVar,
+                                       numVar[2])
                          ),
                          
                          conditionalPanel(
                            condition = "input.plotType == 'box'",
                            selectInput("boxX",
                                        "X Variable:",
-                                       factVar),
+                                       factVar,
+                                       factVar[1]),
                            selectInput("boxY",
                                        "Y Variable:",
-                                       numVar)
+                                       numVar,
+                                       numVar[1])
                          ),
                          
-                         conditionalPanel(
-                           condition = "['density','bar','point','box'].includes(input.plotType)",
                            checkboxGroupInput("plotOpt",
                                               "Plot Options:",
                                               c('Group Fill' = 'fill',
@@ -140,17 +142,17 @@ shinyUI(fluidPage(
                              condition = "input.plotOpt.includes('fill')",
                              selectInput("groupVar",
                                          "Group By:",
-                                         factVar)
+                                         factVar,
+                                         factVar[2])
                              ),
                            
                            conditionalPanel(
                              condition = "input.plotOpt.includes('facet')",
-                             selectInput("facetVar:",
+                             selectInput("facetVar",
                                          "Facet By:",
-                                         factVar)
-                             )
-                           
-                         ),
+                                         factVar,
+                                         factVar[3])
+                             ),
                          
                          h6(em("Use the options below to generate custom numerical summaries of the data.")),
                          

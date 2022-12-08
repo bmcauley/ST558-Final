@@ -34,44 +34,86 @@ shinyServer(function(input, output) {
   
   output$ggplot <- renderPlot({
     
-    GX <- ggplot(data = attrition, aes(x = get(input$plotVarX), y = get(input$plotVarY)))
-    
     if (input$plotType == 'density') {
       
-      G <- ggplot(data = attrition, aes(x = get(input$densityX)))
+      g <- ggplot(data = attrition, aes(x = get(input$densityX)))
       
-      G + geom_histogram(aes(y=..density..), color = "black", fill = "lightblue") +
+      gOut <- g + geom_histogram(aes(y=..density..), fill = "lightblue") +
         geom_density(linetype = 2, color = "red") +
-        xlab(input$densityX)
+        labs(x= input$densityX)
+
+      if ('fill' %in% input$plotOpt) {
+        gOut <- g + geom_histogram(aes(y=..density.., fill = get(input$groupVar)), alpha = 0.5) +
+          geom_density(linetype = 2, aes(color = get(input$groupVar))) +
+          labs(x = input$densityX, fill = input$groupVar, color = input$groupVar)
+      } 
+      
+      if ('facet' %in% input$plotOpt) {
+        gOut <- gOut + facet_wrap(input$facetVar)
+      }
+      
+      gOut
+      
     }
     
-    # else if (input$plotType == 'density' && input$fillOpt == 'Yes') {
-    #   G + geom_density(aes(fill = get(input$fillVar)), alpha = 0.5) +
-    #     labs(x = input$plotVar, fill = input$fillVar)
-    # }
     
     else if (input$plotType == 'bar') {
-      G <- ggplot(data = attrition, aes(x = get(input$barX)))
       
-      G + geom_bar(aes(fill = get(input$barX))) +
+      g <- ggplot(data = attrition, aes(x = get(input$barX)))
+      
+      gOut <- g + geom_bar(aes(fill = get(input$barX))) +
         xlab(input$barX) +
         guides(fill = "none")
+      
+      if ('fill' %in% input$plotOpt) {
+        gOut <- g + geom_bar(aes(fill = get(input$groupVar)), position = "dodge") +
+          labs(x = input$barX, fill = input$groupVar)
+          
+      }
+      
+      if ('facet' %in% input$plotOpt) {
+        gOut <- gOut + facet_wrap(input$facetVar)
+      }
+      
+      gOut
+      
     }
     
     else if (input$plotType == 'point') {
-      G <- ggplot(data = attrition, aes(x = get(input$pointX), y = get(input$pointY)))
+      g <- ggplot(data = attrition, aes(x = get(input$pointX), y = get(input$pointY)))
       
-      G + geom_point() +
-        geom_smooth(method = "lm") +
+      gOut <- g + geom_point() + geom_smooth(method = "lm") + 
         labs(x = input$pointX, y = input$pointY)
+      
+      if ('fill' %in% input$plotOpt) {
+        gOut <- g + geom_point() + geom_smooth(method = "lm", aes(fill = get(input$groupVar))) +
+          labs(x = input$pointX, y = input$pointY, fill = input$groupVar)
+      }
+      
+      if ('facet' %in% input$plotOpt) {
+        gOut <- gOut + facet_wrap(input$facetVar)
+      }
+      
+      gOut
     }
     
     else if (input$plotType == 'box') {
-      G <- ggplot(data = attrition, aes(x = get(input$boxX), y = get(input$boxY)))
+      g <- ggplot(data = attrition, aes(x = get(input$boxX), y = get(input$boxY)))
       
-      G + geom_boxplot(aes(fill = get(input$boxX))) +
+      gOut <- g + geom_boxplot(aes(fill = get(input$boxX))) +
         labs(x = input$boxX, y = input$boxY) +
         guides(fill = "none")
+      
+      if ('fill' %in% input$plotOpt) {
+        gOut <- g + geom_boxplot(aes(fill = get(input$groupVar))) +
+          labs(x = input$boxX, y = input$boxY, fill = input$groupVar)
+      }
+      
+      if ('facet' %in% input$plotOpt) {
+        gOut <- gOut + facet_wrap(input$facetVar)
+      }
+      
+      gOut
     }
     
   })
