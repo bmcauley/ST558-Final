@@ -374,17 +374,84 @@ shinyUI(fluidPage(
 
                                   ),
                           tabPanel("Build",
-                                   sidebarLayout(
-                                     sidebarPanel(
-                                       selectizeInput("vars", "Columns:",
-                                                      choices = var_choice,
-                                                      selected = var_choice[c(1:10)],
-                                                      multiple = TRUE)
+                                   titlePanel("Build Models"),
+                                   fluidRow(
+                                     column(3, wellPanel(HTML("<h6>Use the field below to set the proportion by which
+                                                            you want to split the training and test data.</h6>
+                                                              
+                                                              <h6>Specify the respective settings for each model method in the columns to the right.</h6>
+                                                              
+                                                              
+                                                            <h6>Click the <em><b>Build</b></em> button to obtain the approprtiate summaries and fit statistics.
+                                                              The generated models can be applied on the <em>Predict</em> tab.</h6>"),
+                                                         numericInput("prop",
+                                                  "Proportion (training):",
+                                                  value = 0.7,
+                                                  min = 0.1,
+                                                  max = 0.9,
+                                                  step = 0.05),
+                                                  submitButton("Build", icon = icon("gears"))
+                                                  )
                                      ),
                                      
-                                     mainPanel()
+                                     column(3, wellPanel(h5("Logistic Regression"),
+                                                         selectizeInput("logVars",
+                                                                        "Predictor Variables:",
+                                                                        var_choice[-2],
+                                                                        selected = var_choice[1:10],
+                                                                        multiple = TRUE),
+                                                         checkboxGroupInput("logSettings",
+                                                                            label = NULL,
+                                                                            c("Center Variables" = 'center',
+                                                                              "Scale Variables" = 'scale',
+                                                                              "Stepwise Selection" = 'step',
+                                                                              "Cross-Validation" = 'cv')
+                                                                            
+                                                                            ),
+                                                         conditionalPanel(
+                                                           condition = "input.logSettings.includes('cv')",
+                                                           selectInput("folds",
+                                                                       "Number of folds:",
+                                                                       c('1'= 1,'3' = 3, '5' = 5, '10' = 10))
+                                                         )
+                                                         )
+                                            ),
                                      
-                                   )
+                                     column(3, wellPanel(h5("Classification Tree"),
+                                                         selectizeInput("treeVars",
+                                                                        "Predictor Variables:",
+                                                                        var_choice[-2],
+                                                                        selected = var_choice[1:10],
+                                                                        multiple = TRUE),
+                                                         
+                                                         checkboxInput("treeSettings",
+                                                                       "Cross-Validation",
+                                                                       value = FALSE),
+                                                         
+                                                         conditionalPanel(
+                                                           condition = "input.treeSettings == 1",
+                                                           selectInput("treeCV", "Number of folds",
+                                                                        c('1'= 1,'3' = 3, '5' = 5, '10' = 10))
+                                                         ),
+                                                         
+                                                         numericInput("cp", "Value for cp parameter:",
+                                                                      value = 1)
+                                                         )
+                                            ),
+                                     column(3, wellPanel(h5("Random Forest"),
+                                                         selectizeInput("rfVars",
+                                                                        "Predictor Variables:",
+                                                                        var_choice[-2],
+                                                                        selected = var_choice[1:10],
+                                                                        multiple = TRUE),
+                                                         checkboxInput("rfSettings",
+                                                                       "Cross-Validation"),
+                                                         numericInput("mtry", "Value for mtry parameter:",
+                                                                      value = 1)
+                                     )
+                                     )
+                                     
+                                     )
                           )
                                    ,
                           tabPanel("Predict")
