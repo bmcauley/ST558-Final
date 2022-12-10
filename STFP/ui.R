@@ -475,7 +475,8 @@ shinyUI(fluidPage(
                                       h6(em("You may want to go lower."))),
                      
                      
-                     actionButton("modelBuild", "Build", icon = icon("gears"))
+                     actionButton("modelBuild", "Build", icon = icon("gears"),
+                                  style="color: #000; background-color: #fff; border-color: #000")
                    )),
                    
                    column(
@@ -493,9 +494,7 @@ shinyUI(fluidPage(
                          "logSettings",
                          label = NULL,
                          c(
-                           "Center Variables" = 'center',
-                           "Scale Variables" = 'scale',
-                           "Stepwise Selection" = 'step',
+                           "Standardize Variables" = 'std',
                            "Cross-Validation" = 'cv'
                          )
                          
@@ -504,12 +503,7 @@ shinyUI(fluidPage(
                                         selectInput(
                                           "logCV",
                                           "Number of folds:",
-                                          c(
-                                            '1' = 1,
-                                            '3' = 3,
-                                            '5' = 5,
-                                            '10' = 10
-                                          )
+                                          c(3,5,7,10)
                                         ))
                      )
                    ),
@@ -532,7 +526,7 @@ shinyUI(fluidPage(
                        
                        conditionalPanel(condition = "input.treeSettings == 1",
                                         selectInput("treeCV", "Number of folds",
-                                                    c(1, 3, 5, 10))),
+                                                    c(3, 5, 7, 10))),
                        
                        numericInput(
                          "cp",
@@ -559,7 +553,7 @@ shinyUI(fluidPage(
                                      "Cross-Validation"),
                        conditionalPanel(condition = "input.rfSettings == 1",
                                         selectInput("rfCV", "Number of folds",
-                                                    c(1, 3, 5, 10))),
+                                                    c(3, 5, 7, 10))),
                        numericInput(
                          "mtry",
                          "Value for mtry parameter:",
@@ -572,18 +566,20 @@ shinyUI(fluidPage(
                    )
                  ),
                  
-                 fluidRow(column(8, h4("Fit Statistics"),
-                   dataTableOutput("RMSE"),
+                 fluidRow(column(8,
                    h4("Model Summaries")
                  )),
                  
                  fluidRow(
-                   column(4,
-                          verbatimTextOutput("logModel")),
-                   column(4,
-                          verbatimTextOutput("treeModel")),
-                   column(4,
-                          verbatimTextOutput("rfModel"))
+                   column(6,
+                          h6("LogReg"),
+                          withSpinner(verbatimTextOutput("logModel")), type = 7),
+                   column(3,
+                          h6("ClassTree"),
+                          withSpinner(verbatimTextOutput("treeModel")), type = 7),
+                   column(3,
+                          h6("RF"),
+                          withSpinner(verbatimTextOutput("rfModel")), type = 7)
                  )
                )
                ,

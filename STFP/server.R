@@ -5,6 +5,7 @@ library(shiny)
 library(caret)
 library(tidyverse)
 library(DT)
+library(shinycssloaders)
 
 #Data cleaning step
 attrition <- read_csv("HR Employee Attrition.csv") %>%
@@ -284,91 +285,192 @@ shinyServer(function(input, output) {
   })
   
   
-  logFitObj <- reactive({
-    print(i())
-    
-    prd <- input$logVars
-    
-    if ('step' %in% input$logSettings) {
-      backVars <-
-        regsubsets(Attrition ~ ., trainData()[, c("Attrition", prd)], method = "backward")
-      
-      backSumm <- summary(backVars, all.best = FALSE)
-      
-      met <- c(
-        R2 = which.max(backSumm$rsq),
-        Cp = which.min(backSumm$cp),
-        BIC = which.min(backSumm$bic)
-      )
-      
-      M <- which.max(tabulate(met))
-      
-      terms <- coef(backVars, M)
-      prd <- names(terms)
-      
-    }
-    
-    if ('cv' %in% input$logSettings) {
-      t <- trainControl(method = "cv", number = input$logCV)
-    } else {
-      t <- NULL
-    }
-    
-    if ('scale' %in% input$logSettings) {
-      p <- c("scale")
-    } else if ('center' %in% input$logSettings) {
-      p <- c("center")
-    } else if ('scale' %in% input$logSettings &&
-               'center' %in% input$logSettings) {
-      p <- c("scale", "center")
-    } else {
-      p <- NULL
-    }
-    
-    train(
-      Attrition ~ .,
-      data = trainData()[, c("Attrition", prd)],
-      method = "glm",
-      metric = "rmse",
-      preProcess = p,
-      trControl = t
-    )
-    
-  })
+  log <- eventReactive(input$modelBuild,
+                       
+                       {
+                         prd <- input$logVars
+                         
+                         summOut <- train(
+                           Attrition ~ .,
+                           data = trainData()[, c("Attrition", prd)],
+                           method = "glm",
+                           metric = "Accuracy"
+                         )
+                         
+                         if ('cv' %in% input$logSettings) {
+                           t <- trainControl(method = "cv", number = input$logCV)
+                           
+                           summOut <- train(
+                             Attrition ~ .,
+                             data = trainData()[, c("Attrition", prd)],
+                             method = "glm",
+                             metric = "Accuracy",
+                             trControl = t
+                           )
+                         }
+                         
+                         if ('std' %in% input$logSettings) {
+                           p <- c("scale", "center")
+                           
+                           summOut <- train(
+                             Attrition ~ .,
+                             data = trainData()[, c("Attrition", prd)],
+                             method = "glm",
+                             metric = "Accuracy",
+                             preProcess = p
+                           )
+                         }
+                         
+                         if ('cv' %in% input$logSettings &&
+                             'std' %in% input$logSettings) {
+                           summOut <- train(
+                             Attrition ~ .,
+                             data = trainData()[, c("Attrition", prd)],
+                             method = "glm",
+                             metric = "Accuracy",
+                             preProcess = p,
+                             trControl = t
+                           )
+                         }
+                         
+                         summOut
+                       })
   
   output$logModel <- renderPrint({
-    summary(logFitObj())
+    
+    req(input$modelBuild)
+    
+    isolate({
+      test <- testData()[, c("Attrition", input$logVars)]
+      
+      preds <- predict.train(log(), newdata = test)
+      predResults <- postResample(preds, obs = test$Attrition)
+      
+      cat(
+        "Train Accuracy: ",
+        round(log()$results$Accuracy, 4),
+        "\nTest Accuracy: ",
+        round(predResults[[1]], 4),
+        "\n\nModel:\n"
+      )
+      
+      summary(log())
+      
+    })
   })
+  #-----------------------------
+  
+  tree <- eventReactive(input$modelBuild,
+                        
+                        {
+                          prd <- input$treeVars
+                          tune <- data.frame(cp = input$cp)
+                          
+                          treeObj <- train(
+                            Attrition ~ .,
+                            data = trainData()[, c("Attrition", prd)],
+                            method = "rpart",
+                            metric = "Accuracy",
+                            tuneGrid = tune
+                          )
+                          
+                          if ('cv' %in% input$treeSettings) {
+                            t <- trainControl(method = "cv", number = input$treeCV)
+                            
+                            treeObj <- train(
+                              Attrition ~ .,
+                              data = trainData()[, c("Attrition", prd)],
+                              method = "rpart",
+                              metric = "Accuracy",
+                              trControl = t,
+                              tuneGrid = tune
+                            )
+                          }
+                          
+                          treeObj
+                        })
   
   output$treeModel <- renderPrint({
-    print("hi im a model")
+
+    
+    req(input$modelBuild)
+    
+    isolate({
+      test <- testData()[, c("Attrition", input$treeVars)]
+      
+      preds <- predict.train(tree(),
+                             newdata = test)
+      predResults <- postResample(preds, obs = test$Attrition)
+      
+      cat(
+        "Train Accuracy: ",
+        round(tree()$results$Accuracy, 4),
+        "\nTest Accuracy: ",
+        round(predResults[[1]], 4),
+        "\n\nVariable Importance:\n"
+      )
+      
+      varImp(tree()$finalModel)  %>% arrange(desc(Overall))
+      
+    })
   })
+  
+  #---------------------------
+  rf <- eventReactive(input$modelBuild,
+                      
+                      {
+                        prd <- input$rfVars
+                        tune <- data.frame(mtry = input$mtry)
+                        
+                        rfObj <- train(
+                          Attrition ~ .,
+                          data = trainData()[, c("Attrition", prd)],
+                          method = "rf",
+                          metric = "Accuracy",
+                          tuneGrid = tune
+                        )
+                        
+                        if ('cv' %in% input$rfSettings) {
+                          t <- trainControl(method = "cv", number = input$rfCV)
+                          
+                          rfObj <- train(
+                            Attrition ~ .,
+                            data = trainData()[, c("Attrition", prd)],
+                            method = "rf",
+                            metric = "Accuracy",
+                            trControl = t,
+                            tuneGrid = tune
+                          )
+                        }
+                        
+                        rfObj
+                      })
   
   output$rfModel <- renderPrint({
-    print("hi im a randomforest")
+    
+    
+    req(input$modelBuild)
+    
+    isolate({
+      test <- testData()[, c("Attrition", input$rfVars)]
+      
+      preds <- predict.train(rf(), newdata = test)
+      predResults <- postResample(preds, obs = test$Attrition)
+      
+      cat(
+        "Train Accuracy: ",
+        round(rf()$results$Accuracy, 4),
+        "\nTest Accuracy: ",
+        round(predResults[[1]], 4),
+        "\n\nVariable Importance:\n"
+      )
+      
+      varImp(rf()$finalModel)  %>% arrange(desc(Overall))
+      
+    })
   })
   
-  output$RMSE <- renderDataTable({
-    logRMSE <- sqrt(mean((attrition$Age - fit$fitted.values) ^ 2))
-    treeRMSE <- 1
-    rfRMSE <- 1
-    
-    TslogRMSE <- 3
-    TstreeRMSE <- 2
-    TsrfRMSE <- 2
-    
-    
-    datatable(tibble(
-      Method = c(
-        'Logistic Regression',
-        'Classification Tree (CART)',
-        'Random Forest'
-      ),
-      TrainRMSE = c(logRMSE, treeRMSE, rfRMSE),
-      TestRMSE = c(TslogRMSE, TstreeRMSE, TsrfRMSE)
-    ),
-    options = list(dom = 't'))
-  })
+  #---------------------------
   
   #create output of observations
   output$fullTable <- renderDataTable(datatable(
