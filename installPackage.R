@@ -13,24 +13,3 @@ if (any(okPkg == FALSE)) {
 # Load the packages
 lapply(pkglst, require, character.only = TRUE)
 
-t <- trainControl(method = "cv", number = 3)
-tune <- data.frame(cp = 0.05)
-i <- createDataPartition(attrition[[1]], p = 0.7, list = FALSE)
-
-treeOut <- train(Attrition ~ .,
-                 data = attrition[i,factVar],
-                 method = "glm",
-                 metric = "Accuracy")
-
-treeOut$results$Accuracy
-
-summary(treeOut$finalModel)
-
-ttdf <- attrition[-i,]
-
-row <- attrition[4,factVar]
-
-preds <- predict.train(treeOut, newdata = row)
-predResults <- postResample(preds, obs = ttdf$Attrition)
-#----------------
-
