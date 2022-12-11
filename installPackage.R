@@ -1,7 +1,7 @@
 # Run this script to install and/or load the required packages for the STFP application
 
 # Packages required for the app
-pkglst <- c("shiny", "DT", "tidyverse", "caret", "leaps", "gbm", "rpart", "shinycssloaders")
+pkglst <- c("shiny", "DT", "tidyverse", "caret", "leaps", "gbm", "rpart", "shinycssloaders", "rattle")
 
 OK <- pkglst %in% rownames(installed.packages())
 
@@ -15,22 +15,22 @@ lapply(pkglst, require, character.only = TRUE)
 
 t <- trainControl(method = "cv", number = 3)
 tune <- data.frame(cp = 0.05)
+i <- createDataPartition(attrition[[1]], p = 0.7, list = FALSE)
 
 treeOut <- train(Attrition ~ .,
-                 data = attrition[i,],
-                 method = "rpart",
-                 metric = "Accuracy",
-                 tuneGrid = tune)
+                 data = attrition[i,factVar],
+                 method = "glm",
+                 metric = "Accuracy")
 
 treeOut$results$Accuracy
 
-print((treeOut$finalModel$variable.importance))
-
-varImp(treeOut)
-
-test <- testData()[, c("Attrition", input$treeVars)]
+summary(treeOut$finalModel)
 
 ttdf <- attrition[-i,]
 
-preds <- predict.train(treeOut, newdata = ttdf)
+row <- attrition[4,factVar]
+
+preds <- predict.train(treeOut, newdata = row)
 predResults <- postResample(preds, obs = ttdf$Attrition)
+#----------------
+

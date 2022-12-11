@@ -6,12 +6,16 @@ library(caret)
 library(tidyverse)
 library(DT)
 library(shinycssloaders)
+library(rattle)
 
 #Data cleaning step
 attrition <- read_csv("HR Employee Attrition.csv") %>%
   select(
-    -EmployeeCount,-EmployeeNumber,-Over18,-PerformanceRating,-RelationshipSatisfaction,
-    -StandardHours
+    -EmployeeCount,
+    -EmployeeNumber,
+    -Over18,
+    -PerformanceRating,
+    -RelationshipSatisfaction,-StandardHours
   ) %>%
   mutate_if(is.character, as.factor) %>%
   mutate(
@@ -46,6 +50,23 @@ attrition <- read_csv("HR Employee Attrition.csv") %>%
       labels = c("Bad", "Good", "Better", "Best")
     )
   )
+
+#func def
+make_ui <- function(x, var) {
+  if (is.numeric(x)) {
+    rng <- range(x, na.rm = TRUE)
+    numericInput(paste0(var, "In"), var, value = floor(mean(rng)), min = rng[1], max = rng[2], step = 1)
+    
+  } else if (is.factor(x)) {
+    levs <- levels(x)
+    
+    selectInput(var, var, choices = levs, selected = levs[1], multiple = FALSE)
+    
+  } else {
+    NULL
+  }
+}
+
 
 shinyServer(function(input, output) {
   output$ggplot <- renderPlot({
@@ -164,7 +185,7 @@ shinyServer(function(input, output) {
     else if (input$tblType == 'fivenum') {
       if (input$tableGroup == 'Yes') {
         cnt_tbl <- attrition %>%
-          select(!!!varlist, !!!grplist) %>%
+          select(!!!varlist,!!!grplist) %>%
           group_by(!!!grplist) %>%
           dplyr::summarize_all(list(
             Min = min,
@@ -212,7 +233,7 @@ shinyServer(function(input, output) {
     else {
       if (input$tableGroup == 'Yes') {
         cnt_tbl <- attrition %>%
-          select(!!!varlist, !!!grplist) %>%
+          select(!!!varlist,!!!grplist) %>%
           group_by(!!!grplist) %>%
           summarize_all(list(
             Mean = mean,
@@ -276,12 +297,12 @@ shinyServer(function(input, output) {
   })
   
   trainData <- reactive({
-    attrition[i(), ]
+    attrition[i(),]
     
   })
   
   testData <- reactive({
-    attrition[-i(), ]
+    attrition[-i(),]
   })
   
   
@@ -337,7 +358,6 @@ shinyServer(function(input, output) {
                        })
   
   output$logModel <- renderPrint({
-    
     req(input$modelBuild)
     
     isolate({
@@ -391,8 +411,6 @@ shinyServer(function(input, output) {
                         })
   
   output$treeModel <- renderPrint({
-
-    
     req(input$modelBuild)
     
     isolate({
@@ -447,8 +465,6 @@ shinyServer(function(input, output) {
                       })
   
   output$rfModel <- renderPrint({
-    
-    
     req(input$modelBuild)
     
     isolate({
@@ -470,36 +486,70 @@ shinyServer(function(input, output) {
     })
   })
   
+  #---------------------------------
+  logNames <- reactive(input$logVars)
+  treeNames <- reactive(input$treeVars)
+  rfNames <- reactive(input$rfVars)
+  
+  output$logUI <- renderUI({
+    map(logNames(), ~ make_ui(attrition[[.x]], .x))
+  })
+  
+  output$treeUI <- renderUI({
+    map(treeNames(), ~ make_ui(attrition[[.x]], .x))
+  })
+  
+  output$rfUI <- renderUI({
+    map(rfNames(), ~ make_ui(attrition[[.x]], .x))
+  })
+  
+  output$logGuess <- renderText({
+
+    values <- map(logNames(), ~ input[[.x]])
+    row <- attrition %>%
+      select(logNames()) %>%
+      add_row(tibble_row(values))
+
+    #row <- attrition[4,factVar]
+    
+    #test <- testData()[, c("Attrition", input$rfVars)]
+    
+    prVal <- predict.train(log(), newdata = row)
+  
+    x <- if_else(prVal == 'No', 'does not attrit', 'attrits')
+    
+    print(paste0("Based on the given values, this employee ", x, "."))
+  })
+  
+  
   #---------------------------
   
+  Tbl <- reactive(attrition %>% select(all_of(input$tblVars)) %>%
+                    filter(eval(parse(text = input$tblRows))))
+  
   #create output of observations
-  output$fullTable <- renderDataTable(datatable(
-    attrition,
-    options = list(lengthMenu = list(
-      c(10, 20, 50, -1), c('10', '20', '50', 'All')
-    ),
-    pageLength = 10),
-    filter = list(position = "top",
-                  clear = FALSE)
+  output$fullTable <- renderDataTable({
+    req(input$updateTbl)
+
     
-  ))
+    isolate({datatable( Tbl(),
+      options = list(lengthMenu = list(
+        c(10, 20, 50,-1), c('10', '20', '50', 'All')
+      ),
+      pageLength = 10,
+      dom = 'ltipr'))
+    })
+    
+    })
   
-  # Tbl <- reactive(attrition %>% select(all_of(input$tblVars)))
+
   
-  
-  
-  # output$employData <- downloadHandler(
-  #   filname = function() {
-  #
-  #     #paste("attrition_", format(Sys.time(), '%d-%m-%Y_%H:%M:%S'), ".csv", sep = "")
-  #   },
-  #
-  #   content = function(file) {
-  #     write.csv(attrition[input[["dt_rows_all"]]], file)
-  #   },
-  #
-  #   contentType = "text/csv"
-  # )
+  output$employData <- downloadHandler(
+    filename = function() { paste("attrition_", format(Sys.time(), '%d-%m-%Y_%H-%M-%S'), '.csv', sep='') },
+    content = function(file) {
+      write.csv(Tbl(), file)
+    }
+  )
   
   
 })
