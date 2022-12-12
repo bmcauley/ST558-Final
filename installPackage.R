@@ -18,7 +18,7 @@ lapply(pkglst, require, character.only = TRUE)
 
 # CLEANING THE DATASET LOADED FROM CSV FILE
 
-attrition <- read_csv("HR Employee Attrition.csv") %>%
+attrition <- read_csv("https://raw.githubusercontent.com/bmcauley/ST558-Final/main/STFP/HR%20Employee%20Attrition.csv") %>%
   select(-EmployeeCount, -EmployeeNumber, -Over18, -PerformanceRating, -RelationshipSatisfaction,
          -StandardHours) %>%
   mutate_if(is.character, as.factor) %>%
