@@ -13,27 +13,14 @@ The following R packages were used in developing this app. For it to perform as 
 - [tidyverse](https://www.tidyverse.org/) - For intuitive data manipulation and analysis; also enables use of its sub-packages, the following of which were used:
    - [ggplot2](https://ggplot2.tidyverse.org/), [readr](https://readr.tidyverse.org/), [dplyr](https://dplyr.tidyverse.org/), [tibble](https://tibble.tidyverse.org/), and [tidyr](https://tidyr.tidyverse.org/)
 - [caret](https://github.com/topepo/caret/) - For training and plotting models for classification and regression problems
-- [leaps](https://www.rdocumentation.org/packages/leaps/versions/3.1/topics/leaps) - For selection of the best subset of predictor variables 
-- [gbm](https://github.com/gbm-developers/gbm#readme) - Needed for `caret` training to recognize `gbm` method
+- [rpart](https://cran.r-project.org/web/packages/rpart/rpart.pdf) - Needed for `caret` training to recognize `rpart` method
+- [shinycssloaders](https://github.com/gbm-developers/gbm#readme) - Enables loading animations for Shiny objects that are (re)calculating
 
 ### Accessing the Application
 
-Download the [installPackage.R](installPackage.R) script, or copy and run the code here to install any missing packages and load all of them.
+Download the [installPackage.R](installPackage.R) script, and run it in your RStudio environment. This file ensures all required packages are installed and loaded, and generates objects into the global environment.
 
-```
-pkglst <- c("shiny", "DT", "tidyverse", "caret", "leaps", "gbm")
-
-OK <- pkglst %in% rownames(installed.packages())
-
-if (any(OK == FALSE)) {
-  install.packages(pkglst[!OK])
-}
-
-lapply(pkglst, require, character.only = TRUE)
-
-```
-
-Copy and run the following code in RStudio to open the app.
+Then, copy and run the following code in the console to open the app.
 
 ```
 shiny::runGitHub("bmcauley/ST558-Final", ref = "main", subdir = "STFP")
