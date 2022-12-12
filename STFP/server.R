@@ -1,92 +1,23 @@
-# This is the server logic of a Shiny web application. You can run the
-# application by clicking 'Run App' above.
-
-library(shiny)
-library(caret)
-library(tidyverse)
-library(DT)
-library(shinycssloaders)
-library(rattle)
-
-#Data cleaning step
-attrition <- read_csv("HR Employee Attrition.csv") %>%
-  select(
-    -EmployeeCount,
-    -EmployeeNumber,
-    -Over18,
-    -PerformanceRating,
-    -RelationshipSatisfaction,-StandardHours
-  ) %>%
-  mutate_if(is.character, as.factor) %>%
-  mutate(
-    BusinessTravel = factor(
-      BusinessTravel,
-      levels = c("Non-Travel", "Travel_Frequently", "Travel_Rarely"),
-      labels = c("None", "Frequent", "Rare")
-    ),
-    Education = factor(
-      Education,
-      levels = c(1, 2, 3, 4, 5),
-      labels = c("Below College", "Some College", "Bachelor's", "Master's", "PhD")
-    ),
-    EnvironmentSatisfaction = factor(
-      EnvironmentSatisfaction,
-      levels = c(1, 2, 3, 4),
-      labels = c("Low", "Medium", "High", "Very High")
-    ),
-    JobInvolvement = factor(
-      JobInvolvement,
-      levels = c(1, 2, 3, 4),
-      labels = c("Low", "Medium", "High", "Very High")
-    ),
-    JobSatisfaction = factor(
-      JobSatisfaction,
-      levels = c(1, 2, 3, 4),
-      labels = c("Low", "Medium", "High", "Very High")
-    ),
-    WorkLifeBalance = factor(
-      WorkLifeBalance,
-      levels = c(1, 2, 3, 4),
-      labels = c("Bad", "Good", "Better", "Best")
-    )
-  )
-
-#func def
-make_ui <- function(x, var) {
-  if (is.numeric(x)) {
-    rng <- range(x, na.rm = TRUE)
-    numericInput(paste0(var, "In"), var, value = floor(mean(rng)), min = rng[1], max = rng[2], step = 1)
-    
-  } else if (is.factor(x)) {
-    levs <- levels(x)
-    
-    selectInput(var, var, choices = levs, selected = levs[1], multiple = FALSE)
-    
-  } else {
-    NULL
-  }
-}
+# THIS R FILE CONTAINS THE SERVER LOGIC FOR THE STFP APPLICATION
 
 
 shinyServer(function(input, output) {
+  
+#-----PLOT RENDERING FOR EDA PAGE-----#
+  
+# TYPE: DENSITY PLOT
   output$ggplot <- renderPlot({
     if (input$plotType == 'density') {
       g <- ggplot(data = attrition, aes(x = get(input$densityX)))
       
-      gOut <-
-        g + geom_histogram(aes(y = ..density..), fill = "lightblue") +
+      gOut <- g + geom_histogram(aes(y = ..density..), fill = "lightblue") +
         geom_density(linetype = 2, color = "red") +
         labs(x = input$densityX)
       
       if ('fill' %in% input$plotOpt) {
-        gOut <-
-          g + geom_histogram(aes(y = ..density.., fill = get(input$groupVar)), alpha = 0.5) +
+        gOut <- g + geom_histogram(aes(y = ..density.., fill = get(input$groupVar)), alpha = 0.5) +
           geom_density(linetype = 2, aes(color = get(input$groupVar))) +
-          labs(
-            x = input$densityX,
-            fill = input$groupVar,
-            color = input$groupVar
-          )
+          labs(x = input$densityX, fill = input$groupVar, color = input$groupVar)
       }
       
       if ('facet' %in% input$plotOpt) {
@@ -94,10 +25,9 @@ shinyServer(function(input, output) {
       }
       
       gOut
-      
     }
     
-    
+# TYPE: BAR PLOT
     else if (input$plotType == 'bar') {
       g <- ggplot(data = attrition, aes(x = get(input$barX)))
       
@@ -106,8 +36,7 @@ shinyServer(function(input, output) {
         guides(fill = "none")
       
       if ('fill' %in% input$plotOpt) {
-        gOut <-
-          g + geom_bar(aes(fill = get(input$groupVar)), position = "dodge") +
+        gOut <- g + geom_bar(aes(fill = get(input$groupVar)), position = "dodge") +
           labs(x = input$barX, fill = input$groupVar)
         
       }
@@ -117,27 +46,18 @@ shinyServer(function(input, output) {
       }
       
       gOut
-      
     }
     
+# TYPE: SCATTER PLOT
     else if (input$plotType == 'point') {
-      g <-
-        ggplot(data = attrition, aes(
-          x = get(input$pointX),
-          y = get(input$pointY)
-        ))
+      g <- ggplot(data = attrition, aes(x = get(input$pointX), y = get(input$pointY)))
       
       gOut <- g + geom_point() + geom_smooth(method = "lm") +
         labs(x = input$pointX, y = input$pointY)
       
       if ('fill' %in% input$plotOpt) {
-        gOut <-
-          g + geom_point() + geom_smooth(method = "lm", aes(fill = get(input$groupVar))) +
-          labs(
-            x = input$pointX,
-            y = input$pointY,
-            fill = input$groupVar
-          )
+        gOut <- g + geom_point() + geom_smooth(method = "lm", aes(fill = get(input$groupVar))) +
+          labs(x = input$pointX, y = input$pointY, fill = input$groupVar)
       }
       
       if ('facet' %in% input$plotOpt) {
@@ -147,9 +67,9 @@ shinyServer(function(input, output) {
       gOut
     }
     
+# TYPE: BOXPLOT
     else if (input$plotType == 'box') {
-      g <-
-        ggplot(data = attrition, aes(x = get(input$boxX), y = get(input$boxY)))
+      g <- ggplot(data = attrition, aes(x = get(input$boxX), y = get(input$boxY)))
       
       gOut <- g + geom_boxplot(aes(fill = get(input$boxX))) +
         labs(x = input$boxX, y = input$boxY) +
@@ -157,9 +77,7 @@ shinyServer(function(input, output) {
       
       if ('fill' %in% input$plotOpt) {
         gOut <- g + geom_boxplot(aes(fill = get(input$groupVar))) +
-          labs(x = input$boxX,
-               y = input$boxY,
-               fill = input$groupVar)
+          labs(x = input$boxX, y = input$boxY, fill = input$groupVar)
       }
       
       if ('facet' %in% input$plotOpt) {
@@ -171,9 +89,14 @@ shinyServer(function(input, output) {
     
   })
   
+#-----SUMMARY TABLE RENDERING FOR EDA PAGE-----#
+  
   output$summTable <- renderDataTable({
+    
     grplist <- syms(input$tblGroupVar)
     varlist <- syms(input$sumVar)
+    
+# CORRELATION MATRIX
     
     if (input$tblType == 'corr') {
       corrTbl <- attrition %>%
@@ -182,7 +105,10 @@ shinyServer(function(input, output) {
       cnt_tbl <- round(cor(corrTbl), 4)
     }
     
+# FIVE-NUMBER SUMMARY
+    
     else if (input$tblType == 'fivenum') {
+      
       if (input$tableGroup == 'Yes') {
         cnt_tbl <- attrition %>%
           select(!!!varlist,!!!grplist) %>%
@@ -198,9 +124,7 @@ shinyServer(function(input, output) {
         if (length(varlist) > 1) {
           cnt_tbl <- cnt_tbl %>%
             pivot_longer(
-              cols = ends_with(c(
-                "_Min", "_Q1", "_Median", "_Q3", "_Max"
-              )),
+              cols = ends_with(c("_Min", "_Q1", "_Median", "_Q3", "_Max")),
               names_sep = "_",
               names_to = c("SummVar", ".value")
             )
@@ -226,11 +150,13 @@ shinyServer(function(input, output) {
             )
         }
         
-        
       }
     }
     
+    
+# MEASURES OF CENTER & SPREAD SUMMARY
     else {
+      
       if (input$tableGroup == 'Yes') {
         cnt_tbl <- attrition %>%
           select(!!!varlist,!!!grplist) %>%
@@ -245,9 +171,7 @@ shinyServer(function(input, output) {
         if (length(varlist) > 1) {
           cnt_tbl <- cnt_tbl %>%
             pivot_longer(
-              cols = ends_with(c(
-                "_Mean", "_Stddev", "_Var", "_IQR"
-              )),
+              cols = ends_with(c("_Mean", "_Stddev", "_Var", "_IQR")),
               names_sep = "_",
               names_to = c("SummVar", ".value")
             )
@@ -283,22 +207,29 @@ shinyServer(function(input, output) {
         mutate_if(is.numeric, ~ round(., 2))
     }
     
+# RENAME COLUMNS TO VARIABLE NAMES IF THERE IS GROUPING;
+# MAKES THE TABLE LOOK CONSISTENT
+    
     if (input$tblType != 'corr' && input$tableGroup == 'Yes') {
       cnt_tbl <- cnt_tbl %>%
         rename_with(.cols = 1, ~ paste0(input$tblGroupVar))
     }
     
-    
-    datatable(cnt_tbl)
+
+# OUTPUT DATATABLE
+    datatable(cnt_tbl,
+              options = list(dom = 'ltipr'))
   })
   
+#-----LOGIC FOR MODEL BUILDING PAGE-----#
+  
+# DATA PARTITIONING
   i <- reactive({
     createDataPartition(attrition[[1]], p = input$prop, list = FALSE)
   })
   
   trainData <- reactive({
     attrition[i(),]
-    
   })
   
   testData <- reactive({
@@ -306,8 +237,8 @@ shinyServer(function(input, output) {
   })
   
   
+# LOGISTIC REGRESSION MODEL OBJECT
   log <- eventReactive(input$modelBuild,
-                       
                        {
                          prd <- input$logVars
                          
@@ -317,6 +248,8 @@ shinyServer(function(input, output) {
                            method = "glm",
                            metric = "Accuracy"
                          )
+                         
+# CROSS-VALIDATION OPTION ENABLED
                          
                          if ('cv' %in% input$logSettings) {
                            t <- trainControl(method = "cv", number = input$logCV)
@@ -328,7 +261,10 @@ shinyServer(function(input, output) {
                              metric = "Accuracy",
                              trControl = t
                            )
+                           
                          }
+                         
+# VARIABLE STANDARDIZATION OPTION ENABLED
                          
                          if ('std' %in% input$logSettings) {
                            p <- c("scale", "center")
@@ -342,8 +278,9 @@ shinyServer(function(input, output) {
                            )
                          }
                          
-                         if ('cv' %in% input$logSettings &&
-                             'std' %in% input$logSettings) {
+# CV & VARIABLE STANDARIZATION ENABLED
+                         
+                         if ('cv' %in% input$logSettings && 'std' %in% input$logSettings) {
                            summOut <- train(
                              Attrition ~ .,
                              data = trainData()[, c("Attrition", prd)],
@@ -357,6 +294,8 @@ shinyServer(function(input, output) {
                          summOut
                        })
   
+# FIT SUMMARY FOR LOGISTIC REGRESSION MODEL
+  
   output$logModel <- renderPrint({
     req(input$modelBuild)
     
@@ -367,10 +306,8 @@ shinyServer(function(input, output) {
       predResults <- postResample(preds, obs = test$Attrition)
       
       cat(
-        "Train Accuracy: ",
-        round(log()$results$Accuracy, 4),
-        "\nTest Accuracy: ",
-        round(predResults[[1]], 4),
+        "Train Accuracy: ", round(log()$results$Accuracy, 4),
+        "\nTest Accuracy: ", round(predResults[[1]], 4),
         "\n\nModel:\n"
       )
       
@@ -378,10 +315,10 @@ shinyServer(function(input, output) {
       
     })
   })
-  #-----------------------------
+
+# CLASSIFICATION TREE OBJECT
   
   tree <- eventReactive(input$modelBuild,
-                        
                         {
                           prd <- input$treeVars
                           tune <- data.frame(cp = input$cp)
@@ -393,6 +330,8 @@ shinyServer(function(input, output) {
                             metric = "Accuracy",
                             tuneGrid = tune
                           )
+                          
+# CROSS VALIDATION ENABLED
                           
                           if ('cv' %in% input$treeSettings) {
                             t <- trainControl(method = "cv", number = input$treeCV)
@@ -410,21 +349,21 @@ shinyServer(function(input, output) {
                           treeObj
                         })
   
+  
+# FIT SUMMARY FOR CLASSIFICATION TREE
+  
   output$treeModel <- renderPrint({
     req(input$modelBuild)
     
     isolate({
       test <- testData()[, c("Attrition", input$treeVars)]
       
-      preds <- predict.train(tree(),
-                             newdata = test)
+      preds <- predict.train(tree(), newdata = test)
       predResults <- postResample(preds, obs = test$Attrition)
       
       cat(
-        "Train Accuracy: ",
-        round(tree()$results$Accuracy, 4),
-        "\nTest Accuracy: ",
-        round(predResults[[1]], 4),
+        "Train Accuracy: ", round(tree()$results$Accuracy, 4),
+        "\nTest Accuracy: ", round(predResults[[1]], 4),
         "\n\nVariable Importance:\n"
       )
       
@@ -433,7 +372,8 @@ shinyServer(function(input, output) {
     })
   })
   
-  #---------------------------
+# RANDOM FOREST OBJECT
+  
   rf <- eventReactive(input$modelBuild,
                       
                       {
@@ -447,6 +387,8 @@ shinyServer(function(input, output) {
                           metric = "Accuracy",
                           tuneGrid = tune
                         )
+
+# CROSS VALIDATION ENABLED
                         
                         if ('cv' %in% input$rfSettings) {
                           t <- trainControl(method = "cv", number = input$rfCV)
@@ -464,6 +406,9 @@ shinyServer(function(input, output) {
                         rfObj
                       })
   
+  
+# FIT SUMMARY FOR RANDOM FOREST
+  
   output$rfModel <- renderPrint({
     req(input$modelBuild)
     
@@ -474,10 +419,8 @@ shinyServer(function(input, output) {
       predResults <- postResample(preds, obs = test$Attrition)
       
       cat(
-        "Train Accuracy: ",
-        round(rf()$results$Accuracy, 4),
-        "\nTest Accuracy: ",
-        round(predResults[[1]], 4),
+        "Train Accuracy: ", round(rf()$results$Accuracy, 4),
+        "\nTest Accuracy: ", round(predResults[[1]], 4),
         "\n\nVariable Importance:\n"
       )
       
@@ -486,10 +429,15 @@ shinyServer(function(input, output) {
     })
   })
   
-  #---------------------------------
+#-----LOGIC FOR MODEL PREDICTION PAGE-----#
+  
+# GET VARIABLE NAMES FROM EACH MODEL
+  
   logNames <- reactive(input$logVars)
   treeNames <- reactive(input$treeVars)
   rfNames <- reactive(input$rfVars)
+  
+# RENDER UI FOR EACH MODEL BASED ON VARIABLE INPUTS
   
   output$logUI <- renderUI({
     map(logNames(), ~ make_ui(attrition[[.x]], .x))
@@ -503,49 +451,140 @@ shinyServer(function(input, output) {
     map(rfNames(), ~ make_ui(attrition[[.x]], .x))
   })
   
-  output$logGuess <- renderText({
-
-    values <- map(logNames(), ~ input[[.x]])
-    row <- attrition %>%
-      select(logNames()) %>%
-      add_row(tibble_row(values))
-
-    #row <- attrition[4,factVar]
-    
-    #test <- testData()[, c("Attrition", input$rfVars)]
-    
-    prVal <- predict.train(log(), newdata = row)
+# GET USER-INPUT VALUES FROM UI
   
-    x <- if_else(prVal == 'No', 'does not attrit', 'attrits')
+  logVals <- reactive(a <- map(logNames(), ~ input[[.x]]))
+  treeVals <- reactive(b <- map(treeNames(), ~ input[[.x]]))
+  rfVals <- reactive(c <- map(rfNames(), ~ input[[.x]]))
+  
+# MODEL PREDICTION
+  
+  logGuess <- reactive({
+    new <- tibble(name = unlist(logNames()), x = unlist(logVals()))
     
-    print(paste0("Based on the given values, this employee ", x, "."))
+    new <- new %>% pivot_wider(names_from = name, values_from = x) %>%
+      mutate_if(logNames() %in% numVar, as.numeric)
+    
+    predict.train(log(), newdata = as.data.frame(new))
+  })
+  
+  treeGuess <- reactive({
+    new <- tibble(name = unlist(treeNames()), x = unlist(treeVals()))
+    
+    new <- new %>% pivot_wider(names_from = name, values_from = x) %>%
+      mutate_if(treeNames() %in% numVar, as.numeric)
+    
+    predict.train(tree(), newdata = as.data.frame(new))
+  })
+  
+  rfGuess <- reactive({
+    new <- tibble(name = unlist(rfNames()), x = unlist(rfVals()))
+    
+    new <- new %>% pivot_wider(names_from = name, values_from = x) %>%
+      mutate_if(rfNames() %in% numVar, as.numeric)
+    
+    predict.train(rf(), newdata = as.data.frame(new))
+  })
+
+# OUTPUT USER-INPUT VALUES
+  
+  output$logEmploy <- renderPrint({
+    print("ABOUT THIS EMPLOYEE")
+    
+    for (i in 1:length(logNames())) {
+      print(paste0(logNames()[i], ": ", logVals()[i]))
+    }
+    
+  })
+  
+  output$treeEmploy <- renderPrint({
+    print("ABOUT THIS EMPLOYEE")
+    
+    for (i in 1:length(treeNames())) {
+      print(paste0(treeNames()[i], ": ", treeVals()[i]))
+    }
+    
+  })
+  
+  output$rfEmploy <- renderPrint({
+    print("ABOUT THIS EMPLOYEE")
+    
+    for (i in 1:length(rfNames())) {
+      print(paste0(rfNames()[i], ": ", rfVals()[i]))
+    }
+    
+  })
+  
+# OUTPUT PREDICTION
+  
+  output$logResult <- renderText({
+    req(input$predict)
+    
+    isolate({
+    x <- if_else(logGuess() == 'No', 'DOES NOT ATTRIT', 'ATTRITS')
+    
+    print(paste0("Based on the given values, Logistic Regression predicts this employee...", x, "."))
+    })
+  })
+  
+  output$treeResult <- renderText({
+    req(input$predict)
+    
+    isolate({
+    x <- if_else(treeGuess() == 'No', 'DOES NOT ATTRIT', 'ATTRITS')
+    
+    print(paste0("Based on the given values, Classification Tree predicts this employee...", x, "."))
+    })
+  })
+  
+  output$rfResult <- renderText({
+    req(input$predict)
+    
+    isolate({
+    x <- if_else(rfGuess() == 'No', 'DOES NOT ATTRIT', 'ATTRITS')
+    
+    print(paste0("Based on the given values, Random Forest predicts this employee...", x, "."))
+    })
+  })
+  
+#-----LOGIC FOR DATA EXPLORATION PAGE-----#
+  
+# FILTER DATA BY USER INPUTS
+  Tbl <- reactive({
+    
+    #CHECK IF FILTER BOX IS EMPTY OR NOT
+    if (isTruthy(input$tblRows)) {
+      attrition %>% select(all_of(input$tblVars)) %>%
+        filter(eval(parse(text = input$tblRows)))
+    } else {
+      attrition %>% select(all_of(input$tblVars))
+    }
+    
+  })
+  
+# OUTPUT OF FILTERED DATA
+  
+  output$fullTable <- renderDataTable({
+    req(input$updateTbl)
+    
+    isolate({
+      datatable(Tbl(),
+                options = list(
+                  lengthMenu = list(c(10, 20, 50,-1), c('10', '20', '50', 'All')),
+                  pageLength = 10,
+                  dom = 'ltipr'
+                ))
+    })
+    
   })
   
   
-  #---------------------------
-  
-  Tbl <- reactive(attrition %>% select(all_of(input$tblVars)) %>%
-                    filter(eval(parse(text = input$tblRows))))
-  
-  #create output of observations
-  output$fullTable <- renderDataTable({
-    req(input$updateTbl)
-
-    
-    isolate({datatable( Tbl(),
-      options = list(lengthMenu = list(
-        c(10, 20, 50,-1), c('10', '20', '50', 'All')
-      ),
-      pageLength = 10,
-      dom = 'ltipr'))
-    })
-    
-    })
-  
-
+# SAVE FILTERED DATA
   
   output$employData <- downloadHandler(
-    filename = function() { paste("attrition_", format(Sys.time(), '%d-%m-%Y_%H-%M-%S'), '.csv', sep='') },
+    filename = function() {
+      paste("attrition_", format(Sys.time(), '%d-%m-%Y_%H-%M-%S'), '.csv', sep = '')
+    },
     content = function(file) {
       write.csv(Tbl(), file)
     }
